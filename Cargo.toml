@@ -6,8 +6,8 @@ edition = "2018"
 
 #wasm-pack related fields
 description = "my working copy of the tutorial code from the rustwasm project's Game-of-Life example. https://rustwasm.github.io/docs/book/game-of-life/hello-world.html"
-repository = ""
-license = "MIT"
+repository = "https://github.com/boylede/wasm-game-of-life"
+license = "MIT, APACHE"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
