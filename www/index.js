@@ -53,6 +53,8 @@ const renderLoop = () => {
 }
 
 const drawGrid = () => {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.height, canvas.width);
     ctx.beginPath();
     ctx.strokeStyle = GRID_COLOR;
     ctx.lineWidth = 1;
@@ -74,20 +76,22 @@ const getIndex = (row, column) => {
 const drawCells = () => {
     const cellsPtr = universe.cells();
     const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+    
+    ctx.fillStyle = ALIVE_COLOR;
     ctx.beginPath();
     for (let row = 0; row < height; row++) {
         for (let col = 0; col < width; col++) {
             const idx = getIndex(row, col);
-            ctx.fillStyle = cells[idx] === Cell.Dead ? DEAD_COLOR : ALIVE_COLOR;
-            ctx.fillRect(
-                col * (CELL_SIZE + 1) + HALF,
-                row * (CELL_SIZE + 1) + HALF,
-                CELL_SIZE,
-                CELL_SIZE
-            );
+            if (cells[idx] === Cell.Alive ) {
+                ctx.fillRect(
+                    col * (CELL_SIZE + 1) + HALF,
+                    row * (CELL_SIZE + 1) + HALF,
+                    CELL_SIZE,
+                    CELL_SIZE
+                );
+            }
         }
     }
-    ctx.stroke();
 };
 
 drawGrid();
