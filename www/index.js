@@ -4,7 +4,7 @@ import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 const CELL_SIZE = 11; // odd # of pixels required
 const HALF = CELL_SIZE / 2;
 const GRID_COLOR = "#d0d0d0";
-const DEAD_COLOR = "#f0f0f0";
+const DEAD_COLOR = "#ffffff";
 const ALIVE_COLOR = "#333333";
 
 const canvas = document.getElementById("game-of-life-canvas");
