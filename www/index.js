@@ -24,6 +24,8 @@ let frameReference = null;
 const isPaused = () => frameReference === null;
 
 const playPauseButton = document.getElementById("play-pause");
+const resetButton = document.getElementById("reset");
+const stepButton = document.getElementById("step");
 
 const play = () => {
     playPauseButton.textContent = "Pause";
@@ -42,7 +44,20 @@ playPauseButton.addEventListener("click", event => {
     } else {
         pause();
     }
-})
+});
+
+resetButton.addEventListener("click", event => {
+    universe.reset();
+    drawGrid();
+    drawCells();
+});
+
+stepButton.addEventListener("click", event => {
+    pause();
+    universe.tick();
+    drawGrid();
+    drawCells();
+});
 
 const renderLoop = () => {
     universe.tick();
@@ -96,4 +111,4 @@ const drawCells = () => {
 
 drawGrid();
 drawCells();
-requestAnimationFrame(renderLoop);
+play();
