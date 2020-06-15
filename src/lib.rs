@@ -31,11 +31,17 @@ impl Cell {
     }
 }
 
+enum BufferState {
+    First,
+    Second,
+}
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
+    double: Vec<Cell>,
+    state: BufferState,
 }
 
 impl Universe {
@@ -43,6 +49,10 @@ impl Universe {
         (row * self.width + column) as usize
     }
     fn live_neighbor_count(&self, row: u32, column: u32) -> u8 {
+        let cells: &Vec<Cell> = match self.state {
+            BufferState::First => &self.cells,
+            BufferState::Second => &self.double,
+        };
         let north = if row == 0 {self.height - 1} else {row - 1};
         let south = if row == self.height - 1 { 0 } else { row + 1 };
         let west = if column == 0 { self.width - 1 } else { column - 1 };
@@ -50,28 +60,28 @@ impl Universe {
 
         return {
             let nw = self.get_index(north, west);
-            self.cells[nw] as u8
+            cells[nw] as u8
         } + {
             let n = self.get_index(north, column);
-            self.cells[n] as u8
+            cells[n] as u8
         } + {
             let ne = self.get_index(north, east);
-            self.cells[ne] as u8
+            cells[ne] as u8
         } + {
             let w = self.get_index(row, west);
-            self.cells[w] as u8
+            cells[w] as u8
         } + {
             let e = self.get_index(row, east);
-            self.cells[e] as u8
+            cells[e] as u8
         } + {
             let sw = self.get_index(south, west);
-            self.cells[sw] as u8
+            cells[sw] as u8
         } + {
             let s = self.get_index(south, column);
-            self.cells[s] as u8
+            cells[s] as u8
         } + {
             let se = self.get_index(south, east);
-            self.cells[se] as u8
+            cells[se] as u8
         };
     }
     pub fn reset_dead(&mut self) {
@@ -80,6 +90,7 @@ impl Universe {
                 Cell::Dead
             })
             .collect();
+        self.double = self.cells.clone();
     }
     pub fn reset_random(&mut self) {
         self.cells = (0..self.width * self.height)
@@ -91,6 +102,7 @@ impl Universe {
                 }
             })
             .collect();
+            self.double = self.cells.clone();
     }
     pub fn reset_grid(&mut self) {
         self.cells = (0..self.width * self.height)
@@ -102,14 +114,23 @@ impl Universe {
                 }
             })
             .collect();
+            self.double = self.cells.clone();
     }
     pub fn get_cells(&self) -> &[Cell] {
-        &self.cells
+        match self.state {
+            BufferState::First => &self.cells,
+            BufferState::Second => &self.double,
+        }        
     }
-    pub fn set_cells_alive(&mut self, cells: &[(u32, u32)]) {
-        for (row, col) in cells.iter().cloned() {
+    pub fn set_cells_alive(&mut self, alive: &[(u32, u32)]) {
+        
+        for (row, col) in alive.iter().cloned() {
             let idx = self.get_index(row, col);
-            self.cells[idx] = Cell::Alive;
+            let cells: &mut Vec<Cell> = match self.state {
+                BufferState::First => &mut self.cells,
+                BufferState::Second => &mut self.double,
+            };
+            cells[idx] = Cell::Alive;
         }
     }
 }
@@ -117,11 +138,13 @@ impl Universe {
 #[wasm_bindgen]
 impl Universe {
     pub fn tick(&mut self) {
-        let mut next = self.cells.clone();
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
-                let cell = self.cells[idx];
+                let cell = match self.state {
+                    BufferState::First => self.cells[idx],
+                    BufferState::Second => self.double[idx],
+                };
                 let live_neighbors = self.live_neighbor_count(row, col);
                 let next_cell = match (cell, live_neighbors) {
                     (Cell::Alive, x) if x < 2 => Cell::Dead,
@@ -130,10 +153,17 @@ impl Universe {
                     (Cell::Dead, 3) => Cell::Alive,
                     (otherwise, _) => otherwise,
                 };
-                next[idx] = next_cell;
+                // log!("      it becomes {:?}", next_cell);
+                match self.state {
+                    BufferState::First => self.double[idx] = next_cell,
+                    BufferState::Second => self.cells[idx] = next_cell,
+                }
             }
         }
-        self.cells = next;
+        self.state = match self.state {
+            BufferState::First => BufferState::Second,
+            BufferState::Second => BufferState::First,
+        }
     }
     pub fn new() -> Self {
         utils::set_panic_hook();
@@ -143,12 +173,11 @@ impl Universe {
             width,
             height,
             cells: vec![],
+            double: vec![],
+            state: BufferState::First,
         };
         new.reset_random();
         new
-    }
-    pub fn render(&self) -> String {
-        self.to_string()
     }
     pub fn width(&self) -> u32 {
         self.width
@@ -157,7 +186,10 @@ impl Universe {
         self.height
     }
     pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+        match self.state {
+            BufferState::First => self.cells.as_ptr(),
+            BufferState::Second => self.double.as_ptr(),
+        }
     }
     pub fn set_width(&mut self, width: u32) {
         self.width = width;
@@ -172,21 +204,11 @@ impl Universe {
     }
     pub fn toggle_cell(&mut self, row: u32, column: u32) {
         let idx = self.get_index(row, column);
-        self.cells[idx].toggle();
-    }
-}
-
-use std::fmt;
-
-impl fmt::Display for Universe {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for line in self.cells.as_slice().chunks(self.width as usize) {
-            for &cell in line {
-                let symbol = if cell == Cell::Dead { '◻' } else { '◼' };
-                write!(f, "{}", symbol)?;
-            }
-            write!(f, "\n")?;
+        match self.state {
+            BufferState::First => self.cells[idx].toggle(),
+            BufferState::Second => self.double[idx].toggle(),
         }
-        Ok(())
     }
 }
+
+
