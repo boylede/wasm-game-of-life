@@ -11,6 +11,10 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn initialize() {
     use utils::set_panic_hook;
     set_panic_hook();
+macro_rules! log {
+    ($($t:tt)*) => {
+        web_sys::console::log_1(&format!($($t)*).into());
+    }
 }
 
 #[wasm_bindgen]
@@ -110,6 +114,7 @@ impl Universe {
         self.cells = next;
     }
     pub fn new() -> Self {
+        utils::set_panic_hook();
         let width = 64;
         let height = 64;
         let mut new = Universe {
