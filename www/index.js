@@ -1,4 +1,4 @@
-import { Universe, Cell } from "wasm-game-of-life";
+import { Cell, static_tick, static_width, static_height, toggle_cell, cells_ptr, reset } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
 const CELL_SIZE = 11; // odd # of pixels required
@@ -8,10 +8,9 @@ const DEAD_COLOR = "#ffffff";
 const ALIVE_COLOR = "#333333";
 
 const canvas = document.getElementById("game-of-life-canvas");
-const universe = Universe.new();
 
-const width = universe.width();
-const height = universe.height();
+const width = static_width();
+const height = static_height();
 
 // 1px border around each cell and 1 cell border around overall canvas
 canvas.height = (CELL_SIZE + 1) * height + CELL_SIZE;
@@ -47,20 +46,20 @@ playPauseButton.addEventListener("click", event => {
 });
 
 resetButton.addEventListener("click", event => {
-    universe.reset();
+    reset();
     drawGrid();
     drawCells();
 });
 
 stepButton.addEventListener("click", event => {
     pause();
-    universe.tick();
+    static_tick();
     drawGrid();
     drawCells();
 });
 
 const renderLoop = () => {
-    universe.tick();
+    static_tick();
     drawGrid();
     drawCells();
 
@@ -89,7 +88,7 @@ const getIndex = (row, column) => {
 };
 
 const drawCells = () => {
-    const cellsPtr = universe.cells();
+    const cellsPtr = cells_ptr();
     const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
     
     ctx.fillStyle = ALIVE_COLOR;
@@ -107,6 +106,7 @@ const drawCells = () => {
             }
         }
     }
+    // ctx.stroke();
 };
 
 canvas.addEventListener("click", event => {
@@ -121,12 +121,13 @@ canvas.addEventListener("click", event => {
     const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1) - 0.5), height - 1);
     const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1) - 0.5), width - 1);
   
-    universe.toggle_cell(row, col);
+    toggle_cell(row, col);
   
     drawGrid();
     drawCells();
   });
 
+reset();
 drawGrid();
 drawCells();
 play();
