@@ -142,6 +142,9 @@ impl Universe {
         self.height = height;
         self.reset_dead();
     }
+    pub fn reset(&mut self) {
+        self.reset_grid();
+    }
 }
 
 use std::fmt;
