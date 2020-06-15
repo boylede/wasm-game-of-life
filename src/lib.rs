@@ -40,6 +40,7 @@ enum BufferState {
 pub struct Universe {
     width: u32,
     height: u32,
+    tick_rate: u32,
     cells: Vec<Cell>,
     double: Vec<Cell>,
     state: BufferState,
@@ -134,31 +135,32 @@ impl Universe {
 #[wasm_bindgen]
 impl Universe {
     pub fn tick(&mut self) {
-        for row in 0..self.height {
-            for col in 0..self.width {
-                let idx = self.get_index(row, col);
-                let cell = match self.state {
-                    BufferState::First => self.cells[idx],
-                    BufferState::Second => self.double[idx],
-                };
-                let live_neighbors = self.live_neighbor_count(row, col);
-                let next_cell = match (cell, live_neighbors) {
-                    (Cell::Alive, x) if x < 2 => Cell::Dead,
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                    (Cell::Alive, x) if x > 3 => Cell::Dead,
-                    (Cell::Dead, 3) => Cell::Alive,
-                    (otherwise, _) => otherwise,
-                };
-                // log!("      it becomes {:?}", next_cell);
-                match self.state {
-                    BufferState::First => self.double[idx] = next_cell,
-                    BufferState::Second => self.cells[idx] = next_cell,
+        for _ in 0..self.tick_rate {
+            for row in 0..self.height {
+                for col in 0..self.width {
+                    let idx = self.get_index(row, col);
+                    let cell = match self.state {
+                        BufferState::First => self.cells[idx],
+                        BufferState::Second => self.double[idx],
+                    };
+                    let live_neighbors = self.live_neighbor_count(row, col);
+                    let next_cell = match (cell, live_neighbors) {
+                        (Cell::Alive, x) if x < 2 => Cell::Dead,
+                        (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
+                        (Cell::Alive, x) if x > 3 => Cell::Dead,
+                        (Cell::Dead, 3) => Cell::Alive,
+                        (otherwise, _) => otherwise,
+                    };
+                    match self.state {
+                        BufferState::First => self.double[idx] = next_cell,
+                        BufferState::Second => self.cells[idx] = next_cell,
+                    }
                 }
             }
-        }
-        self.state = match self.state {
-            BufferState::First => BufferState::Second,
-            BufferState::Second => BufferState::First,
+            self.state = match self.state {
+                BufferState::First => BufferState::Second,
+                BufferState::Second => BufferState::First,
+            }
         }
     }
     pub fn new() -> Self {
@@ -168,6 +170,7 @@ impl Universe {
         let mut new = Universe {
             width,
             height,
+            tick_rate: 1,
             cells: vec![],
             double: vec![],
             state: BufferState::First,
