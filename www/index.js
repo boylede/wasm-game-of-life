@@ -109,6 +109,24 @@ const drawCells = () => {
     }
 };
 
+canvas.addEventListener("click", event => {
+    const boundingRect = canvas.getBoundingClientRect();
+  
+    const scaleX = canvas.width / boundingRect.width;
+    const scaleY = canvas.height / boundingRect.height;
+  
+    const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
+    const canvasTop = (event.clientY - boundingRect.top) * scaleY;
+  
+    const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1) - 0.5), height - 1);
+    const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1) - 0.5), width - 1);
+  
+    universe.toggle_cell(row, col);
+  
+    drawGrid();
+    drawCells();
+  });
+
 drawGrid();
 drawCells();
 play();
