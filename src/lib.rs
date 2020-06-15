@@ -35,6 +35,7 @@ enum BufferState {
     First,
     Second,
 }
+
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
@@ -45,24 +46,24 @@ pub struct Universe {
 }
 
 impl Universe {
-    fn get_index(&self, row: u32, column: u32) -> usize {
-        (row * self.width + column) as usize
+    fn get_index(&self, row: u32, col: u32) -> usize {
+        (row * self.width + col) as usize
     }
-    fn live_neighbor_count(&self, row: u32, column: u32) -> u8 {
+    fn live_neighbor_count(&self, row: u32, col: u32) -> u8 {
         let cells: &Vec<Cell> = match self.state {
             BufferState::First => &self.cells,
             BufferState::Second => &self.double,
         };
-        let north = if row == 0 {self.height - 1} else {row - 1};
+        let north = if row == 0 { self.height - 1 } else { row - 1 };
         let south = if row == self.height - 1 { 0 } else { row + 1 };
-        let west = if column == 0 { self.width - 1 } else { column - 1 };
-        let east = if column == self.width - 1 { 0 } else { column + 1 };
+        let west = if col == 0 { self.width - 1 } else { col - 1 };
+        let east = if col == self.width - 1 { 0 } else { col + 1 };
 
         return {
             let nw = self.get_index(north, west);
             cells[nw] as u8
         } + {
-            let n = self.get_index(north, column);
+            let n = self.get_index(north, col);
             cells[n] as u8
         } + {
             let ne = self.get_index(north, east);
@@ -77,7 +78,7 @@ impl Universe {
             let sw = self.get_index(south, west);
             cells[sw] as u8
         } + {
-            let s = self.get_index(south, column);
+            let s = self.get_index(south, col);
             cells[s] as u8
         } + {
             let se = self.get_index(south, east);
@@ -85,11 +86,7 @@ impl Universe {
         };
     }
     pub fn reset_dead(&mut self) {
-        self.cells = (0..self.width * self.height)
-            .map(|_| {
-                Cell::Dead
-            })
-            .collect();
+        self.cells = (0..self.width * self.height).map(|_| Cell::Dead).collect();
         self.double = self.cells.clone();
     }
     pub fn reset_random(&mut self) {
@@ -102,28 +99,27 @@ impl Universe {
                 }
             })
             .collect();
-            self.double = self.cells.clone();
+        self.double = self.cells.clone();
     }
     pub fn reset_grid(&mut self) {
         self.cells = (0..self.width * self.height)
             .map(|i| {
-                if i % 2 == 0 || i % 7 ==0 {
+                if i % 2 == 0 || i % 7 == 0 {
                     Cell::Alive
                 } else {
                     Cell::Dead
                 }
             })
             .collect();
-            self.double = self.cells.clone();
+        self.double = self.cells.clone();
     }
     pub fn get_cells(&self) -> &[Cell] {
         match self.state {
             BufferState::First => &self.cells,
             BufferState::Second => &self.double,
-        }        
+        }
     }
     pub fn set_cells_alive(&mut self, alive: &[(u32, u32)]) {
-        
         for (row, col) in alive.iter().cloned() {
             let idx = self.get_index(row, col);
             let cells: &mut Vec<Cell> = match self.state {
